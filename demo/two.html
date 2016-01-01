@@ -17,6 +17,12 @@ Top level args: {{.}}<br>
 {{template "twob" .}}{{define "twob"}}
 	<h2>This Is Another Two</h2>
 	Args: {{.}}<br>
+
+<ul>
+	{{range sql `select id, name from foo`}}<li>{{.}}</li>
+	{{end}}
+</ul>
+
 {{end}}
 
 </body>
