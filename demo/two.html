@@ -1,0 +1,23 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Two</title>
+</head>
+<body>
+
+Top level args: {{.}}<br>
+
+
+{{template "two" .}}{{define "two"}}
+	<h2>This Is Two</h2>
+	Args: {{.}}<br>
+{{end}}
+
+{{template "twob" .}}{{define "twob"}}
+	<h2>This Is Another Two</h2>
+	Args: {{.}}<br>
+{{end}}
+
+</body>
+</html>
