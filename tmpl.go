@@ -71,8 +71,8 @@ func NewHandler(glob string, ag ArgGetter, fm template.FuncMap) http.Handler {
 	return th
 }
 
-// The default GetArgs function constructs a map[string]interface{}
-// with elements from the following sources:
+// GetArgs is the default function used by NewHandler.
+// It constructs a map[string]interface{} with elements from the following sources:
 //
 // - If the request method is POST or PUT and the content type is application/json
 // it will try to parse up to 64kb of json into an object, the elements of which
