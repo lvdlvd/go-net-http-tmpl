@@ -200,7 +200,7 @@ func (th *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	ww := countWriter{w: w}
 	if err := t.Execute(&ww, args); err != nil {
-		log.Printf("Executing template %q: %v", name, th.err)
+		log.Printf("Executing template %q: %v", name, err)
 		if ww.N == 0 {
 			http.Error(w, "Error rendering template.", http.StatusInternalServerError)
 			return
