@@ -54,8 +54,12 @@ func names(t *template.Template) []string {
 }
 
 // NewHandler constructs a http.Handler that serves the html templates named by the files in the glob pattern.
-// Ag is a function that returns the argument object to template.Execute given a request,
+//
+// Ag must be a function that returns the argument object to template.Execute given a request,
 // when nil, the handler will use the GetArgs function from this package.
+// Beware that an error returned by ag will be rendered in the 400 response,
+// so be sure not to leak sensitive state.
+//
 // Fm may contain extra functions for use in the templates.
 // See https://golang.org/pkg/text/template/#Template.Funcs for more details.
 func NewHandler(glob string, ag ArgGetter, fm template.FuncMap) http.Handler {
@@ -87,6 +91,7 @@ func NewHandler(glob string, ag ArgGetter, fm template.FuncMap) http.Handler {
 // element will be overwritten by a mux.Var of the same name.
 func GetArgs(r *http.Request) (interface{}, error) {
 	args := make(map[string]interface{})
+
 	if r.Method == "POST" || r.Method == "PUT" {
 		ct := r.Header.Get("Content-Type")
 		if ct == "" {
@@ -95,7 +100,8 @@ func GetArgs(r *http.Request) (interface{}, error) {
 		ct, _, _ = mime.ParseMediaType(ct)
 		if ct == "application/json" {
 			defer r.Body.Close()
-			if err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&args); err != nil && err != io.EOF {
+			err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&args)
+			if err != nil && err != io.EOF {
 				return nil, err
 			}
 		}
