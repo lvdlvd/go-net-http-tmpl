@@ -19,7 +19,11 @@ Top level args: {{.}}<br>
 	Args: {{.}}<br>
 
 <ul>
-	{{range sql `select id, name from foo`}}<li>{{.}}</li>
+	{{range sql `select grp, id, name from foo order by grp, id` | group 1}}
+		<li>{{.Group}}
+			<ol>{{range .Inner}}<li>{{.}}</li>{{end}}</ol>
+		</li>
+
 	{{end}}
 </ul>
 

@@ -23,6 +23,7 @@ var (
 func main() {
 
 	os.Remove("./foo.db")
+	defer os.Remove("./foo.db")
 
 	db, err := sql.Open("sqlite3", "./foo.db")
 	if err != nil {
@@ -42,28 +43,24 @@ func main() {
 
 func prepareDB(db *sql.DB) {
 
-	sqlStmt := `
-	create table foo (id integer not null primary key, name text);
+	if _, err := db.Exec(`
+	create table foo (id integer not null primary key, grp integer, name text);
 	delete from foo;
-	`
-	_, err := db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
+	`); err != nil {
+		log.Fatal(err)
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("insert into foo(id, name) values(?, ?)")
+	stmt, err := tx.Prepare("insert into foo(id, grp, name) values(?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 	for i := 0; i < 100; i++ {
-		_, err = stmt.Exec(i, fmt.Sprintf("こんにちわ世界%03d", i))
-		if err != nil {
+		if _, err = stmt.Exec(i, i%10, fmt.Sprintf("foo-%03d", i)); err != nil {
 			log.Fatal(err)
 		}
 	}
