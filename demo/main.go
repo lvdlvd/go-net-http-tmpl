@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/lvdlvd/go-net-http-tmpl"
+	tmpl "../../go-net-http-tmpl"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -35,6 +35,7 @@ func main() {
 
 	h := tmpl.NewHandler(*templates, nil, template.FuncMap{
 		"sql":   tmpl.SqlDebug(db),
+		"sqlr":  tmpl.SqlRDebug(db),
 		"group": tmpl.Group,
 	})
 

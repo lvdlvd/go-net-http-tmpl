@@ -19,9 +19,10 @@ func eq(a, b []interface{}) bool {
 
 // Group is a function suitable for use in a template.FuncMap
 // It is meant to be used in combination with the Sql functor.
-// It will split the records in a channel returned by the sql query
+// It will split the records in a channel of slices as returned by the Sql
+// or the .Records element of the SqlR,
 // into an 'outer' Group and an Inner channel, over which the template
-// can peform a nested {{range}}.
+// can perform a nested {{range}}.
 func Group(nfields int, all <-chan []interface{}) <-chan grouped {
 	outer := make(chan grouped)
 	go func() {

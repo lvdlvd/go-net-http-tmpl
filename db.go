@@ -8,12 +8,46 @@ import (
 )
 
 // Sql returns a function suitable for use in a template.FuncMap for issuing sql queries on db.
+// The records returned by the query come over a channel of records, which themselves are []interface{}.
+// Use SqlM for a version that returns a header and a channel of maps.
 func Sql(db *sql.DB) func(query string, args ...interface{}) (<-chan []interface{}, error) {
-	return (&dbhandler{db: db, stmt: make(map[string]*sql.Stmt)}).sql
+	return (&dbhandler{db: db, stmt: make(map[string]*sql.Stmt)}).sqls
 }
 
+// SqlDebug is identical to Sql but will log query debug information on stderr.
 func SqlDebug(db *sql.DB) func(query string, args ...interface{}) (<-chan []interface{}, error) {
-	return (&dbhandler{db: db, debug: true, stmt: make(map[string]*sql.Stmt)}).sql
+	return (&dbhandler{db: db, debug: true, stmt: make(map[string]*sql.Stmt)}).sqls
+}
+
+type ResultSet struct {
+	Columns []string
+	Records <-chan []interface{}
+}
+
+// Named turns the channel of slices into a channel of maps with named values.
+func (r *ResultSet) Named() <-chan map[string]interface{} {
+	ch := make(chan map[string]interface{})
+	go func() {
+		defer close(ch)
+		for rec := range r.Records {
+			m := make(map[string]interface{}, len(rec))
+			for i, v := range r.Columns {
+				m[v] = rec[i]
+			}
+			ch <- m
+		}
+	}()
+	return ch
+}
+
+// SqlR wraps Sql so it returns a ResultSet instead of a channel of slices.
+func SqlR(db *sql.DB) func(query string, args ...interface{}) (*ResultSet, error) {
+	return (&dbhandler{db: db, stmt: make(map[string]*sql.Stmt)}).sqlr
+}
+
+// SqlDebugR is identical to SqlR but will log query debug information on stderr.
+func SqlRDebug(db *sql.DB) func(query string, args ...interface{}) (*ResultSet, error) {
+	return (&dbhandler{db: db, debug: true, stmt: make(map[string]*sql.Stmt)}).sqlr
 }
 
 type dbhandler struct {
@@ -39,18 +73,31 @@ func (h *dbhandler) prep(query string) (*sql.Stmt, error) {
 	return stmt, nil
 }
 
-func (h *dbhandler) sql(query string, args ...interface{}) (<-chan []interface{}, error) {
-	stmt, err := h.prep(query)
+func (h *dbhandler) sqls(query string, args ...interface{}) (<-chan []interface{}, error) {
+	_, ch, err := h.sql(query, args...)
+	return ch, err
+}
+
+func (h *dbhandler) sqlr(query string, args ...interface{}) (*ResultSet, error) {
+	cols, ch, err := h.sql(query, args...)
 	if err != nil {
 		return nil, err
+	}
+	return &ResultSet{cols, ch}, err
+}
+
+func (h *dbhandler) sql(query string, args ...interface{}) ([]string, <-chan []interface{}, error) {
+	stmt, err := h.prep(query)
+	if err != nil {
+		return nil, nil, err
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	retn, err := rows.Columns()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ch := make(chan []interface{})
@@ -93,5 +140,5 @@ func (h *dbhandler) sql(query string, args ...interface{}) (<-chan []interface{}
 		}
 	}()
 
-	return ch, nil
+	return retn, ch, nil
 }

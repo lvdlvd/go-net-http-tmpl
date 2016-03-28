@@ -27,6 +27,19 @@ Top level args: {{.}}<br>
 	{{end}}
 </ul>
 
+<h3>Using  SqlM</h3>
+
+<table>
+{{with sqlr `select grp, id, name from foo order by grp, id`}}
+	<thead>{{range .Columns}}<th>{{.}}</th>{{end}}</thead>
+	<tbody>
+		{{range .Named}}
+			<tr><td>{{.grp}}</td><td>{{.id}}</td><td>{{.name}}</td></tr>
+		{{end}}
+	</tbody>
+{{end}}
+</table>
+
 {{end}}
 
 </body>
